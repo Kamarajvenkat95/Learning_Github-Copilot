@@ -2,7 +2,7 @@
 Pydantic models for request/response validation.
 """
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, RootModel
 from typing import List, Optional
 
 
@@ -46,9 +46,9 @@ class ErrorResponse(BaseModel):
     detail: str
 
 
-class ActivitiesResponse(BaseModel):
+class ActivitiesResponse(RootModel[dict[str, ActivityResponse]]):
     """Response model for all activities."""
-    __root__: dict[str, ActivityResponse]
+    root: dict[str, ActivityResponse]
 
     class Config:
         json_schema_extra = {
