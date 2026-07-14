@@ -8,115 +8,67 @@ for extracurricular activities at Mergington High School.
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
 import os
 from pathlib import Path
 
-app = FastAPI(title="Mergington High School API",
-              description="API for viewing and signing up for extracurricular activities")
+from src.constants import INITIAL_ACTIVITIES
+from src.services.activity_service import ActivityService
+from src.routes import activities as activities_routes
+
+app = FastAPI(
+    title="Mergington High School API",
+    description="API for viewing and signing up for extracurricular activities",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Mount the static files directory
 current_dir = Path(__file__).parent
 app.mount("/static", StaticFiles(directory=os.path.join(Path(__file__).parent,
           "static")), name="static")
 
-# In-memory activity database
-activities = {
-    "Chess Club": {
-        "description": "Learn strategies and compete in chess tournaments",
-        "schedule": "Fridays, 3:30 PM - 5:00 PM",
-        "max_participants": 12,
-        "participants": ["michael@mergington.edu", "daniel@mergington.edu"]
-    },
-    "Programming Class": {
-        "description": "Learn programming fundamentals and build software projects",
-        "schedule": "Tuesdays and Thursdays, 3:30 PM - 4:30 PM",
-        "max_participants": 20,
-        "participants": ["emma@mergington.edu", "sophia@mergington.edu"]
-    },
-    "Gym Class": {
-        "description": "Physical education and sports activities",
-        "schedule": "Mondays, Wednesdays, Fridays, 2:00 PM - 3:00 PM",
-        "max_participants": 30,
-        "participants": ["john@mergington.edu", "olivia@mergington.edu"]
-    },
-    "Soccer Team": {
-        "description": "Team-based soccer practice and competitive matches",
-        "schedule": "Tuesdays and Thursdays, 4:00 PM - 5:30 PM",
-        "max_participants": 18,
-        "participants": ["luke@mergington.edu", "mia@mergington.edu"]
-    },
-    "Basketball Club": {
-        "description": "Improve basketball skills and scrimmage with classmates",
-        "schedule": "Wednesdays and Fridays, 3:30 PM - 5:00 PM",
-        "max_participants": 16,
-        "participants": ["noah@mergington.edu", "ava@mergington.edu"]
-    },
-    "Art Studio": {
-        "description": "Explore painting, drawing, and mixed media art projects",
-        "schedule": "Mondays and Wednesdays, 3:45 PM - 5:15 PM",
-        "max_participants": 14,
-        "participants": ["harper@mergington.edu", "isabella@mergington.edu"]
-    },
-    "Drama Club": {
-        "description": "Acting, stage production, and performance workshops",
-        "schedule": "Tuesdays and Thursdays, 4:00 PM - 5:30 PM",
-        "max_participants": 20,
-        "participants": ["liam@mergington.edu", "emma@mergington.edu"]
-    },
-    "Science Club": {
-        "description": "Experiment with science projects and prepare for competitions",
-        "schedule": "Wednesdays, 3:30 PM - 5:00 PM",
-        "max_participants": 15,
-        "participants": ["oliver@mergington.edu", "amelia@mergington.edu"]
-    },
-    "Debate Team": {
-        "description": "Develop public speaking and argumentation skills",
-        "schedule": "Mondays and Thursdays, 4:00 PM - 5:30 PM",
-        "max_participants": 12,
-        "participants": ["ethan@mergington.edu", "charlotte@mergington.edu"]
-    }
-}
+# Initialize activities database
+activities = {name: details.copy() for name, details in INITIAL_ACTIVITIES.items()}
+
+# Initialize activity service
+activity_service = ActivityService(activities)
+activities_routes.set_service(activity_service)
+
+# Include activity routes
+app.include_router(activities_routes.router)
 
 
-@app.get("/")
+@app.get(
+    "/",
+    summary="Root endpoint",
+    description="Redirect to the web application"
+)
 def root():
+    """Redirect to the main web application."""
     return RedirectResponse(url="/static/index.html")
 
 
-@app.get("/activities")
-def get_activities():
-    return activities
-
-
-@app.post("/activities/{activity_name}/signup")
-def signup_for_activity(activity_name: str, email: str):
-    """Sign up a student for an activity"""
-    # Validate activity exists
-    if activity_name not in activities:
-        raise HTTPException(status_code=404, detail="Activity not found")
-
-    # Get the specific activity
-    activity = activities[activity_name]
-
-    # Validate student is not already signed up
-    if email in activity["participants"]:
-        raise HTTPException(status_code=400, detail="Student already signed up")
-
-    # Add student
-    activity["participants"].append(email)
-    return {"message": f"Signed up {email} for {activity_name}"}
-
-
-@app.delete("/activities/{activity_name}/participants")
-def remove_participant(activity_name: str, email: str):
-    """Unregister a student from an activity"""
-    if activity_name not in activities:
-        raise HTTPException(status_code=404, detail="Activity not found")
-
-    activity = activities[activity_name]
-
-    if email not in activity["participants"]:
-        raise HTTPException(status_code=404, detail="Participant not found")
-
-    activity["participants"].remove(email)
-    return {"message": f"Removed {email} from {activity_name}"}
+@app.get(
+    "/health",
+    summary="Health check",
+    description="Check if the API is running",
+    tags=["health"]
+)
+def health_check():
+    """Health check endpoint.
+    
+    Returns:
+        Status indicator
+    """
+    return {"status": "healthy", "version": "1.0.0"}
