@@ -32,7 +32,7 @@ def test_signup_new_participant():
     response = client.post("/activities/Chess%20Club/signup", params={"email": "teststudent@mergington.edu"})
 
     assert response.status_code == 200
-    assert "Signed up teststudent@mergington.edu for Chess Club" in response.json()["message"]
+    assert "Successfully signed up teststudent@mergington.edu for Chess Club" in response.json()["message"]
 
     refreshed = client.get("/activities").json()
     assert "teststudent@mergington.edu" in refreshed["Chess Club"]["participants"]
@@ -52,7 +52,7 @@ def test_remove_participant():
     )
 
     assert response.status_code == 200
-    assert "Removed michael@mergington.edu from Chess Club" in response.json()["message"]
+    assert "Successfully removed michael@mergington.edu from Chess Club" in response.json()["message"]
 
     refreshed = client.get("/activities").json()
     assert "michael@mergington.edu" not in refreshed["Chess Club"]["participants"]
