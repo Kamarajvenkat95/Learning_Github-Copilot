@@ -61,7 +61,7 @@ class ActivityService:
         """
         if not email or len(email.strip()) == 0:
             raise HTTPException(
-                status_code=422,
+                status_code=400,
                 detail="Email cannot be empty"
             )
         
@@ -127,7 +127,7 @@ class ActivityService:
         # Add participant
         activity["participants"].append(email)
         
-        return {"message": f"Signed up {email} for {activity_name}"}
+        return {"message": f"Successfully signed up {email} for {activity_name}"}
 
     def remove_participant(self, activity_name: str, email: str) -> Dict[str, str]:
         """Remove a participant from an activity.
@@ -158,7 +158,7 @@ class ActivityService:
         # Remove participant
         activity["participants"].remove(email)
         
-        return {"message": f"Removed {email} from {activity_name}"}
+        return {"message": f"Successfully removed {email} from {activity_name}"}
 
     def get_activities(self) -> Dict[str, Any]:
         """Get all activities.
